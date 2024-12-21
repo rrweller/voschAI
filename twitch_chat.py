@@ -1,8 +1,9 @@
-import socket
+#read chat messages from channel
+
 import asyncio
 from response_formatter import format_chat_message
 
-buffer = []
+
 
 async def read_twitch_chat(channel):
     server = 'irc.chat.twitch.tv'
@@ -23,5 +24,4 @@ async def read_twitch_chat(channel):
             for line in response.split('\r\n'):
                 if "PRIVMSG" in line:
                     formatted_message = format_chat_message(line)
-                    buffer.append(formatted_message)
-                    print(formatted_message)
+                    return formatted_message

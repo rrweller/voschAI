@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 activate.bat
 SECRETS.json
+/output
