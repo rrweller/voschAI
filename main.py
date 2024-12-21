@@ -1,7 +1,6 @@
 import asyncio
 from twitch_chat import read_chat_forever
 from gpt import send_to_openai
-#from gpt_voice import send_to_openai
 from voice import process_voice_queue, add_to_voice_queue
 import random
 from pathlib import Path
