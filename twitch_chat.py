@@ -1,6 +1,13 @@
 import asyncio
 from response_formatter import format_chat_message
 
+async def read_blacklist():
+    try:
+        with open('blacklist.txt', 'r') as f:
+            return set(line.strip() for line in f)
+    except Exception as e:
+        print(f"Error reading blacklist: {e}")
+
 async def read_chat_forever(channel, chat_queue):
     server = 'irc.chat.twitch.tv'
     port = 6667
@@ -10,6 +17,8 @@ async def read_chat_forever(channel, chat_queue):
     reader, writer = await asyncio.open_connection(server, port)
     writer.write(f'NICK {nickname}\n'.encode('utf-8'))
     writer.write(f'JOIN {channel}\n'.encode('utf-8'))
+
+    blacklist = await read_blacklist()
 
     while True:
         response = await reader.read(2048)
@@ -22,8 +31,10 @@ async def read_chat_forever(channel, chat_queue):
         else:
             for line in response.split('\r\n'):
                 if "PRIVMSG" in line:
+                    blacklist = await read_blacklist()
                     username, message = format_chat_message(line)
-                    # Instead of returning, we put the message in the queue
-                    await chat_queue.put((username, message))
+                    # Check if the username is not in the blacklist
+                    if username and message and username not in blacklist:
+                        await chat_queue.put((username, message))
 
         await asyncio.sleep(0.01)  # Let other tasks run

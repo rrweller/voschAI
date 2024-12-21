@@ -20,7 +20,7 @@ channel_name = 'msvosch'
 buffer = []
 
 def compute_buffer_size():
-    return random.randint(1,1)
+    return random.randint(2,4)
 
 def play_audio_file(audio_file):
     """

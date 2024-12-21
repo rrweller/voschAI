@@ -38,7 +38,6 @@ async def process_voice_queue(audio_queue):
                 
                 # Add to audio queue for playback
                 audio_queue.put(str(output_path))
-                print(f"Created voice file: {output_file}")
                 
             except Exception as e:
                 print(f"OpenAI TTS API error: {e}")
