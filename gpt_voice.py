@@ -1,6 +1,9 @@
 import json
 import logging
+import base64
 from openai import OpenAI
+from datetime import datetime
+from pathlib import Path
 from response_formatter import format_openai_response
 
 # Create custom filter
@@ -44,15 +47,27 @@ def send_to_openai(username, message):
     with open('gpt-prompt.txt', 'r') as prompt_file:
         system_content = prompt_file.read()
     
-    response = client.chat.completions.create(
-        model="gpt-4o-mini-2024-07-18",
+    completion = client.chat.completions.create(
+        model="gpt-4o-audio-preview",
+        modalities=["text", "audio"],
+        audio={"voice": "alloy", "format": "mp3"},
         messages=[
             {"role": "system", "content": system_content},
-            {"role": "user", "content": f"Address the message to the user {username} with the message: {message}"},
-        ],
-        max_tokens=50
+            {"role": "user", "content": f"Address the message to the user {username} with the message: {message}"}
+        ]
     )
-    formatted_response = format_openai_response(response)
+
+    # Get text response
+    formatted_response = format_openai_response(completion.choices[0].message)
     print(f"GPT: {formatted_response}")
     logger.info(f"GPT: {formatted_response}")
-    return formatted_response
+
+    # Save audio file
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_file = f"output/voice_output_{timestamp}.mp3"
+    
+    audio_bytes = base64.b64decode(completion.choices[0].message.audio.data)
+    with open(output_file, "wb") as f:
+        f.write(audio_bytes)
+    
+    return formatted_response, output_file

@@ -1,11 +1,7 @@
-#read chat messages from channel
-
 import asyncio
 from response_formatter import format_chat_message
 
-
-
-async def read_twitch_chat(channel):
+async def read_chat_forever(channel, chat_queue):
     server = 'irc.chat.twitch.tv'
     port = 6667
     nickname = 'justinfan12345'  # Anonymous connection
@@ -18,10 +14,16 @@ async def read_twitch_chat(channel):
     while True:
         response = await reader.read(2048)
         response = response.decode('utf-8')
+
         if response.startswith('PING'):
+            # Respond with PONG to keep connection alive
             writer.write('PONG\n'.encode('utf-8'))
+            await writer.drain()
         else:
             for line in response.split('\r\n'):
                 if "PRIVMSG" in line:
-                    formatted_message = format_chat_message(line)
-                    return formatted_message
+                    username, message = format_chat_message(line)
+                    # Instead of returning, we put the message in the queue
+                    await chat_queue.put((username, message))
+
+        await asyncio.sleep(0.01)  # Let other tasks run
