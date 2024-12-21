@@ -3,6 +3,10 @@ import logging
 from openai import OpenAI
 from response_formatter import format_openai_response
 
+# Load config
+with open('config.json') as f:
+    config = json.load(f)
+
 # Create custom filter
 class ChatFilter(logging.Filter):
     def filter(self, record):
@@ -41,16 +45,16 @@ client = OpenAI(api_key=auth_token)
 
 def send_to_openai(username, message):
     logger.info(message)
-    with open('gpt-prompt.txt', 'r') as prompt_file:
+    with open(config['paths']['prompt'], 'r') as prompt_file:
         system_content = prompt_file.read()
     
     response = client.chat.completions.create(
-        model="gpt-4o-mini-2024-07-18",
+        model=config['gpt']['model'],
         messages=[
             {"role": "system", "content": system_content},
             {"role": "user", "content": f"Address the message to the user {username} with the message: {message}"},
         ],
-        max_tokens=50
+        max_tokens=config['gpt']['max_tokens']
     )
     formatted_response = format_openai_response(response)
     print(f"GPT: {formatted_response}")

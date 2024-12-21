@@ -1,26 +1,39 @@
 import asyncio
 from twitch_chat import read_chat_forever
 from gpt import send_to_openai
-#from voice import process_voice_queue, add_to_voice_queue
-from voice_openai import process_voice_queue, add_to_voice_queue
 import random
 from pathlib import Path
 from pygame import mixer
 from queue import Queue
+import json
 import sys
 
+# Load config
+with open('config.json') as f:
+    config = json.load(f)
+
 # Create output directory if it doesn't exist
-Path("output").mkdir(exist_ok=True)
+Path(config['paths']['output_dir']).mkdir(exist_ok=True)
 mixer.init()
 
 # We'll keep this queue for audio file paths
 audio_queue = Queue()
 
-channel_name = 'msvosch'
+channel_name = config['twitch']['channel_name']
 buffer = []
 
+# Import correct voice module based on config
+voice_mode = config['voice']['mode']
+if voice_mode == 'openai':
+    from voice_openai import process_voice_queue, add_to_voice_queue
+else:
+    from voice import process_voice_queue, add_to_voice_queue
+
 def compute_buffer_size():
-    return random.randint(2,4)
+    return random.randint(
+        config['twitch']['buffer_size']['min'],
+        config['twitch']['buffer_size']['max']
+    )
 
 def play_audio_file(audio_file):
     """

@@ -1,9 +1,14 @@
 import asyncio
+import json
 from response_formatter import format_chat_message
+
+# Load config
+with open('config.json') as f:
+    config = json.load(f)
 
 async def read_blacklist():
     try:
-        with open('blacklist.txt', 'r') as f:
+        with open(config['paths']['blacklist'], 'r') as f:
             return set(line.strip() for line in f)
     except Exception as e:
         print(f"Error reading blacklist: {e}")

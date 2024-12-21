@@ -10,6 +10,13 @@ with open('SECRETS.json') as f:
     secrets = json.load(f)
     voice_token = secrets["elevenlabs"]["authToken"]
 
+# Load config
+with open('config.json') as f:
+    config = json.load(f)
+
+voice_config = config['voice']['elevenlabs']
+output_dir = Path(config['paths']['output_dir'])
+
 client = ElevenLabs(api_key=voice_token)
 
 # This queue holds text waiting to be turned into audio
@@ -22,23 +29,19 @@ def add_to_voice_queue(text: str):
     voice_buffer.put(text)
 
 async def process_voice_queue(audio_queue):
-    """
-    Continuously check if there's text to be processed into TTS MP3 files.
-    When an MP3 file is created, put it in audio_queue so the audio player can pick it up.
-    """
     while True:
         if not voice_buffer.empty():
             text = voice_buffer.get()
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_file = f"voice_output_{timestamp}.mp3"
-            output_path = Path(f"output/{output_file}")
+            output_path = output_dir / output_file
             
             try:
                 audio_content = client.text_to_speech.convert(
-                    voice_id="cgSgspJ2msm6clMCkdW9",
-                    output_format="mp3_44100_128",
+                    voice_id=voice_config['voice_id'],
+                    output_format=voice_config['output_format'],
                     text=text,
-                    model_id="eleven_multilingual_v2",
+                    model_id=voice_config['model_id'],
                 )
                 
                 with open(output_path, "wb") as audio_file:

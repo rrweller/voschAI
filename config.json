@@ -1,0 +1,31 @@
+{
+    "twitch": {
+        "channel_name": "msvosch",
+        "buffer_size": {
+            "min": 2,
+            "max": 4
+        }
+    },
+    "voice": {
+        "mode": "openai",
+        "elevenlabs": {
+            "voice_id": "cgSgspJ2msm6clMCkdW9",
+            "model_id": "eleven_multilingual_v2",
+            "output_format": "mp3_44100_128"
+        },
+        "openai": {
+            "model": "tts-1",
+            "voice": "shimmer"
+        }
+    },
+    "gpt": {
+        "model": "gpt-4o-mini-2024-07-18",
+        "max_tokens": 50
+    },
+    "paths": {
+        "output_dir": "output",
+        "blacklist": "blacklist.txt",
+        "logs": "gpt.log",
+        "prompt": "gpt-prompt.txt"
+    }
+}
