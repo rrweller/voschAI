@@ -10,8 +10,8 @@
       overflow: hidden;
     }
     #avatarSprite {
-      width: 400px; /* Adjust as needed for your sprites */
-      height: auto;
+      width: 512px; /* Adjust as needed for your sprites */
+      height: 512px;
       display: block;
       margin: 0 auto;
     }
@@ -47,16 +47,16 @@
     //   The blink duration is a fixed 200ms (eyes closed),
     //   but we pick a random time between 3 and 6 seconds between blinks.
     const BLINK_DURATION_MS = 200;
-    const BLINK_INTERVAL_MIN_MS = 3000;
-    const BLINK_INTERVAL_MAX_MS = 6000;
+    const BLINK_INTERVAL_MIN_MS = 2000;
+    const BLINK_INTERVAL_MAX_MS = 4000;
 
     // TALKING (MOUTH FLAP):
     //   We'll do a cycle: "talk sprite" for random 200-400 ms, then "base sprite" for 200-400 ms, repeating.
     //   That makes the mouth open/closed for different intervals, more natural.
-    const MOUTH_OPEN_MIN_MS    = 200;
-    const MOUTH_OPEN_MAX_MS    = 400;
-    const MOUTH_CLOSED_MIN_MS  = 200;
-    const MOUTH_CLOSED_MAX_MS  = 400;
+    const MOUTH_OPEN_MIN_MS    = 100;
+    const MOUTH_OPEN_MAX_MS    = 500;
+    const MOUTH_CLOSED_MIN_MS  = 100;
+    const MOUTH_CLOSED_MAX_MS  = 500;
 
     ////////////////////////////////////////////////////////////////////////////
     // HELPER: RANDOM FUNCTIONS

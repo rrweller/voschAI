@@ -58,8 +58,6 @@ async def process_audio_queue():
                 set_avatar_state(talking=True)
 
             played = play_audio_file(audio_file)
-            if played:
-                print(f"Playing: {audio_file}")
             
         await asyncio.sleep(0.1)
 
@@ -95,7 +93,6 @@ async def main():
                 msg = msg_or_tuple
                 if msg:
                     buffer.append({"username": username, "msg": msg})
-                    print(f"{username}: {msg}")
 
                     if len(buffer) >= buffer_size:
                         last_message = buffer[-1]
@@ -105,7 +102,7 @@ async def main():
                             last_message["username"],
                             last_message["msg"]
                         )
-
+                        print(f'{last_message["username"]}: {last_message["msg"]}')
                         # Extract emotion from brackets [happy], [sad], [angry]
                         emotion = None
                         if gpt_response.startswith("["):

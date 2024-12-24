@@ -2,8 +2,8 @@
     "twitch": {
         "channel_name": "lelequeen13",
         "buffer_size": {
-            "min": 5,
-            "max": 10
+            "min": 3,
+            "max": 5
         }
     },
     "voice": {
