@@ -1,10 +1,6 @@
 {
     "twitch": {
-        "channel_name": "lelequeen13",
-        "buffer_size": {
-            "min": 3,
-            "max": 5
-        }
+        "channel_name": "keudn"
     },
     "voice": {
         "mode": "openai",
@@ -19,8 +15,9 @@
         }
     },
     "gpt": {
+        "ai_name": "Victoria", 
         "model": "gpt-4o-mini-2024-07-18",
-        "max_tokens": 50
+        "max_tokens": 80
     },
     "paths": {
         "output_dir": "output",

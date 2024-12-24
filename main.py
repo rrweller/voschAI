@@ -1,7 +1,6 @@
 import asyncio
 from twitch_chat import read_chat_forever
 from gpt import send_to_openai
-import random
 from pathlib import Path
 from pygame import mixer
 from queue import Queue
@@ -20,19 +19,15 @@ mixer.init()
 
 audio_queue = Queue()
 channel_name = config['twitch']['channel_name']
-buffer = []
+
+# This is our new AI name from config
+AI_NAME = config['gpt'].get('ai_name', 'assistant')
 
 voice_mode = config['voice']['mode']
 if voice_mode == 'openai':
     from voice_openai import process_voice_queue, add_to_voice_queue
 else:
     from voice import process_voice_queue, add_to_voice_queue
-
-def compute_buffer_size():
-    return random.randint(
-        config['twitch']['buffer_size']['min'],
-        config['twitch']['buffer_size']['max']
-    )
 
 def play_audio_file(audio_file):
     if not mixer.music.get_busy():
@@ -45,84 +40,108 @@ def play_audio_file(audio_file):
     return False
 
 async def process_audio_queue():
+    """
+    Continuously pulls (audio_file, emotion) from audio_queue.
+    Plays the file, updates talking state accordingly.
+    """
     while True:
+        # If nothing playing and queue not empty, play next file
         if not mixer.music.get_busy() and not audio_queue.empty():
-            # We expect (audio_file, emotion)
             audio_file, emotion = audio_queue.get()
 
-            # Now we set the avatar emotion only right before playback
+            # Apply the avatar emotion just before playback
             if emotion:
                 set_avatar_state(emotion=emotion, talking=True)
             else:
-                # If none given, keep current emotion, just set talking=True
                 set_avatar_state(talking=True)
 
             played = play_audio_file(audio_file)
-            
-        await asyncio.sleep(0.1)
-
+        
+        await asyncio.sleep(0.5)
+        
+        # If playback ended, set talking=False
         if not mixer.music.get_busy():
-            # If playback ended, set talking=False. The server logic may revert to happy if needed.
-            set_avatar_state(talking=False)
+            if audio_queue.empty():
+                set_avatar_state(talking=False)
 
 async def main():
+    # This queue receives all Twitch chat messages plus ("__channel_info__", ...) events
     chat_message_queue = asyncio.Queue()
-    buffer_size = compute_buffer_size()
+    
+    # We'll store the last known channel title/game
+    current_title = None
+    current_game = None
 
-    # Start avatar server
+    # Start the avatar server
     asyncio.create_task(run_avatar_server())
 
-    # Launch twitch chat, TTS, audio playback
+    # Launch Twitch reading & TTS tasks
     twitch_task = asyncio.create_task(read_chat_forever(channel_name, chat_message_queue, config))
     voice_task  = asyncio.create_task(process_voice_queue(audio_queue))
     audio_task  = asyncio.create_task(process_audio_queue())
     
-    current_title = None
-    current_game  = None
-    
+    # This is our queue for messages that specifically mention the AI
+    mention_queue = []
+
     while True:
         try:
+            # 1) Wait for the next incoming item from Twitch
             username, msg_or_tuple = await chat_message_queue.get()
+
+            # 2) Check if it's channel info or normal chat
             if username == "__channel_info__":
                 title, game_name = msg_or_tuple
                 current_title = title
                 current_game = game_name
                 print(f"[CHANNEL INFO] Title='{title}', Game='{game_name}'")
-                continue
+            
             else:
+                # A normal chat message
                 msg = msg_or_tuple
                 if msg:
-                    buffer.append({"username": username, "msg": msg})
+                    # 3) Does this message mention the AI name?
+                    #    We'll do a case-insensitive check
+                    if AI_NAME.lower() in msg.lower():
+                        # Add to mention_queue
+                        mention_queue.append({"username": username, "msg": msg})
+                        # If we exceed 5, pop the oldest
+                        if len(mention_queue) > 5:
+                            mention_queue.pop(0)
+            
+            # 4) If mention_queue has messages, respond to them (FIFO: pop(0))
+            if mention_queue:
+                mention = mention_queue.pop(0)
+                user = mention["username"]
+                text = mention["msg"]
 
-                    if len(buffer) >= buffer_size:
-                        last_message = buffer[-1]
-                        gpt_response = send_to_openai(
-                            current_title,
-                            current_game,
-                            last_message["username"],
-                            last_message["msg"]
-                        )
-                        print(f'{last_message["username"]}: {last_message["msg"]}')
-                        # Extract emotion from brackets [happy], [sad], [angry]
-                        emotion = None
-                        if gpt_response.startswith("["):
-                            end_idx = gpt_response.find("]")
-                            if end_idx != -1:
-                                potential_emotion = gpt_response[1:end_idx].strip().lower()
-                                if potential_emotion in ["happy", "sad", "angry"]:
-                                    emotion = potential_emotion
-                                    gpt_response = gpt_response[end_idx + 1:].strip()
+                print(f"[MENTION] {user}: {text}")
 
-                        print(f"GPT says (emotion={emotion}): {gpt_response}")
+                # 5) Send to GPT
+                gpt_response = send_to_openai(
+                    current_title,
+                    current_game,
+                    user,
+                    text
+                )
 
-                        # Instead of setting emotion now, pass to TTS queue
-                        # TTS -> (audio_file, emotion) -> audio_queue -> playback
-                        add_to_voice_queue(gpt_response, emotion=emotion)
+                # 6) Check for emotion prefix ([happy], [sad], [angry])
+                emotion = None
+                if gpt_response.startswith("["):
+                    end_idx = gpt_response.find("]")
+                    if end_idx != -1:
+                        potential_emotion = gpt_response[1:end_idx].strip().lower()
+                        if potential_emotion in ["happy", "sad", "angry"]:
+                            emotion = potential_emotion
+                            gpt_response = gpt_response[end_idx + 1:].strip()
 
-                        buffer.clear()
-                        buffer_size = compute_buffer_size()
+                print(f"GPT => (emotion={emotion}): {gpt_response}")
 
+                # 7) Send result to TTS queue
+                add_to_voice_queue(gpt_response, emotion=emotion)
+
+            # Let the loop breathe
             await asyncio.sleep(0.01)
+
         except Exception as e:
             print(f"Error in main loop: {e}", file=sys.stderr)
             await asyncio.sleep(1)

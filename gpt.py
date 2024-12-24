@@ -53,7 +53,7 @@ def send_to_openai(title, game, username, message):
     response = client.chat.completions.create(
         model=config['gpt']['model'],
         messages=[
-            {"role": "system", "content": f"ALWAYS START THE MESSAGE WITH THE EMOTION YOU WANT TO CONVEY IN THE FORMAT [EMOTION]. THE ONLY VALID OPTIONS FOR EMOTIONS ARE HAPPY, SAD, ANGRY. DO NOT USE ANY OTHER EMOTIONS AS A MESSAGE PREFIX. Only use SAD or ANGRY if you REALLY are feeling those emotions and they are intense. Use the stream title and current game as context for your response, but do not always mention it, only using it when it makes sense. {system_content}"},
+            {"role": "system", "content": f"ALWAYS START THE MESSAGE WITH THE EMOTION YOU WANT TO CONVEY IN THE FORMAT [EMOTION]. THE ONLY VALID OPTIONS FOR EMOTIONS ARE HAPPY, SAD, ANGRY. DO NOT USE ANY OTHER EMOTIONS AS A MESSAGE PREFIX. ALWAYS KEEP THE FORMATTING I HAVE DEFINED. Only use SAD or ANGRY if you REALLY are feeling those emotions and they are intense. Use the stream title and current game as context for your response, but do not always mention it, only using it when it makes sense. Respond with short, concise responses that are natural conversation. Respond in ONLY one or two SHORT sentences. {system_content}"},
             {"role": "user", "content": f"{streamer} is streaming {game} with the title {title}. You are an AI assistant for {streamer}. Address the message to the user {username} with the message: {message}."},
         ],
         max_tokens=config['gpt']['max_tokens']
