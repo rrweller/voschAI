@@ -43,7 +43,9 @@ except json.JSONDecodeError:
 
 client = OpenAI(api_key=auth_token)
 
-def send_to_openai(username, message):
+streamer = config['twitch']['channel_name']
+
+def send_to_openai(title, game, username, message):
     logger.info(message)
     with open(config['paths']['prompt'], 'r') as prompt_file:
         system_content = prompt_file.read()
@@ -51,12 +53,11 @@ def send_to_openai(username, message):
     response = client.chat.completions.create(
         model=config['gpt']['model'],
         messages=[
-            {"role": "system", "content": system_content},
-            {"role": "user", "content": f"Address the message to the user {username} with the message: {message}"},
+            {"role": "system", "content": f"ALWAYS START THE MESSAGE WITH THE EMOTION YOU WANT TO CONVEY IN THE FORMAT [EMOTION]. THE ONLY VALID OPTIONS FOR EMOTIONS ARE HAPPY, SAD, ANGRY. DO NOT USE ANY OTHER EMOTIONS AS A MESSAGE PREFIX. Use the stream title and current game as context for your response, but do not always mention it, only using it when it makes sense. {system_content}"},
+            {"role": "user", "content": f"{streamer} is streaming {game} with the title {title}. You are an AI assistant for {streamer}. Address the message to the user {username} with the message: {message}."},
         ],
         max_tokens=config['gpt']['max_tokens']
     )
     formatted_response = format_openai_response(response)
-    print(f"GPT: {formatted_response}")
     logger.info(f"GPT: {formatted_response}")
     return formatted_response

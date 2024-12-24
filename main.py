@@ -61,13 +61,13 @@ async def process_audio_queue():
         await asyncio.sleep(0.1)
 
 async def main():
-    # This queue will hold (username, message) pairs from Twitch
+    # This queue will hold both chat messages and the special channel-info tuples
     chat_message_queue = asyncio.Queue()
 
     buffer_size = compute_buffer_size()
     
     # 1) Launch the background task that continuously reads Twitch messages
-    twitch_task = asyncio.create_task(read_chat_forever(channel_name, chat_message_queue))
+    twitch_task = asyncio.create_task(read_chat_forever(channel_name, chat_message_queue, config))
     
     # 2) Launch the voice queue task (creates MP3 in background)
     voice_task = asyncio.create_task(process_voice_queue(audio_queue))
@@ -75,28 +75,54 @@ async def main():
     # 3) Launch audio playback task
     audio_task = asyncio.create_task(process_audio_queue())
     
+    # We'll store the last known channel title/game (optional)
+    current_title = None
+    current_game = None
+    
     # Main loop: pull from chat_message_queue, handle logic
     while True:
         try:
-            # Grab next chat message if available
-            username, msg = await chat_message_queue.get()  # This will yield if queue is empty
+            # Grab next item from the chat_message_queue if available
+            username, msg_or_tuple = await chat_message_queue.get()  # This will yield if queue is empty
+
+            # Check if this is channel info or a normal chat message
+            if username == "__channel_info__":
+                # We know msg_or_tuple is actually (title, game_name)
+                title, game_name = msg_or_tuple
+                current_title = title
+                current_game = game_name
+
+                print(f"[CHANNEL INFO] Title='{title}', Game='{game_name}'")
+                continue
+            else:
+                # Otherwise, it's a normal chat message
+                msg = msg_or_tuple
+                if msg:
+                    buffer.append({"username": username, "msg": msg})
+                    print(f"{username}: {msg}")
+                    
+                    # If buffer is at capacity, send message to OpenAI -> TTS
+                    if len(buffer) >= buffer_size:
+                        last_message = buffer[-1]
+                        gpt_response = send_to_openai(current_title, current_game, last_message["username"], last_message["msg"])
+                        
+                        # Check for emotion prefix in gpt_response
+                        emotion = None
+                        if gpt_response.startswith("["):
+                            end_idx = gpt_response.find("]")
+                            if end_idx != -1:
+                                emotion = gpt_response[1:end_idx].strip().lower()
+                                if emotion in ["happy", "sad", "angry"]:
+                                    gpt_response = gpt_response[end_idx + 1:].strip()
+                        
+                        # Add text to TTS queue
+                        print(f"GPT: {gpt_response}")
+                        add_to_voice_queue(gpt_response)
+                        
+                        # Clear buffer and recalc next buffer size
+                        buffer.clear()
+                        buffer_size = compute_buffer_size()
             
-            if msg:
-                buffer.append({"username": username, "msg": msg})
-                print(f"{username}: {msg}")
-                
-                # If buffer is at capacity, send message to OpenAI -> TTS
-                if len(buffer) >= buffer_size:
-                    last_message = buffer[-1]
-                    gpt_response = send_to_openai(last_message["username"], last_message["msg"])
-                    
-                    # Add text to ElevenLabs queue
-                    add_to_voice_queue(gpt_response)
-                    
-                    # Clear buffer and recalc next buffer size
-                    buffer.clear()
-                    buffer_size = compute_buffer_size()
-                    
             # Slight pause so event loop can continue tasks
             await asyncio.sleep(0.01)
 
