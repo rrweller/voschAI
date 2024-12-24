@@ -7,6 +7,13 @@ import os
 
 SECRETS_FILE = 'secrets.json'
 
+def ensure_blacklist_exists():
+    """Create blacklist.txt if it doesn't exist"""
+    if not os.path.exists('blacklist.txt'):
+        with open('blacklist.txt', 'w') as f:
+            f.write('')
+        print("Created empty blacklist.txt file")
+
 def ensure_oauth_token():
     """
     Ensures the 'twitch' object in secrets.json has a valid oauth_token.
@@ -149,6 +156,9 @@ async def read_chat_forever(channel, chat_queue, config):
     # 1) Ensure we have a valid OAuth token
     client_id, client_secret, oauth_token = ensure_oauth_token()
     
+    # Ensure blacklist.txt exists
+    ensure_blacklist_exists()
+
     # 2) Connect to Twitch IRC. We can continue using an anonymous nickname,
     #    since we only need the token for API calls, not for IRC auth.
     server = 'irc.chat.twitch.tv'

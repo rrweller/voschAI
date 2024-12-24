@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from openai import OpenAI
 from response_formatter import format_openai_response
 
@@ -29,7 +30,17 @@ AI_name = config['gpt']['ai_name']
 
 def send_to_openai(title, game, username, message):
     logger.info(message)
-    with open(config['paths']['prompt'], 'r') as prompt_file:
+    
+    prompt_path = config['paths']['prompt']
+    
+    # Check if prompt file exists, create if not
+    if not os.path.exists(prompt_path):
+        default_prompt = ""
+        with open(prompt_path, 'w') as f:
+            f.write(default_prompt)
+        print("Error: Prompt file not found. Created an empty prompt file. Please add your prompt to the file.")
+    
+    with open(prompt_path, 'r') as prompt_file:
         system_content = prompt_file.read()
     
     response = client.chat.completions.create(
