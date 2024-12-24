@@ -1,9 +1,9 @@
 {
     "twitch": {
-        "channel_name": "kimmikichi",
+        "channel_name": "lelequeen13",
         "buffer_size": {
-            "min": 2,
-            "max": 4
+            "min": 5,
+            "max": 10
         }
     },
     "voice": {

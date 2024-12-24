@@ -22,11 +22,9 @@ client = ElevenLabs(api_key=voice_token)
 # This queue holds text waiting to be turned into audio
 voice_buffer = Queue()
 
-def add_to_voice_queue(text: str):
-    """
-    Enqueue text to be turned into speech by ElevenLabs.
-    """
-    voice_buffer.put(text)
+def add_to_voice_queue(text: str, emotion=None):
+    # Instead of just text, store (text, emotion)
+    voice_buffer.put((text, emotion))
 
 async def cleanup_mp3_files(directory: Path, max_files: int = 20):
     """
@@ -52,7 +50,7 @@ async def cleanup_mp3_files(directory: Path, max_files: int = 20):
 async def process_voice_queue(audio_queue):
     while True:
         if not voice_buffer.empty():
-            text = voice_buffer.get()
+            text, emotion = voice_buffer.get()
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_file = f"voice_output_{timestamp}.mp3"
             output_path = output_dir / output_file
@@ -70,7 +68,7 @@ async def process_voice_queue(audio_queue):
                         audio_file.write(chunk)
                         
                 # Instead of storing locally in another queue, send directly to audio_queue
-                audio_queue.put(str(output_path))
+                audio_queue.put((str(output_path), emotion))
 
                 # Schedule the cleanup check asynchronously so it doesn't block this loop
                 asyncio.create_task(cleanup_mp3_files(output_dir, max_files=20))

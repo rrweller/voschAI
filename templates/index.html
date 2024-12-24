@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Avatar</title>
+  <style>
+    body {
+      background: rgba(0,0,0,0);
+      margin: 0;
+      overflow: hidden;
+    }
+    #avatarSprite {
+      width: 400px; /* Adjust as needed for your sprites */
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <img id="avatarSprite" src="/static/happy.png" alt="Avatar" />
+
+  <script>
+    ////////////////////////////////////////////////////////////////////////////
+    // SPRITE PATHS
+    ////////////////////////////////////////////////////////////////////////////
+    // For each emotion, we have emotion.png and emotion_talk.png (ex: "sad", "sad_talk"),
+    // plus a blink.png for happy's idle blink.
+    const spritePaths = {
+      "happy":       "/static/happy.png",
+      "happy_talk":  "/static/happy_talk.png",
+      "sad":         "/static/sad.png",
+      "sad_talk":    "/static/sad_talk.png",
+      "angry":       "/static/angry.png",
+      "angry_talk":  "/static/angry_talk.png",
+      "blink":       "/static/blink.png"
+    };
+
+    ////////////////////////////////////////////////////////////////////////////
+    // TIMING CONSTANTS
+    ////////////////////////////////////////////////////////////////////////////
+    // How often to poll the server for updated emotion/talking state (ms)
+    const SERVER_POLL_INTERVAL_MS = 500;
+
+    // BLINK CONFIG:
+    //   We blink only if emotion=="happy" and talking==false.
+    //   The blink duration is a fixed 200ms (eyes closed),
+    //   but we pick a random time between 3 and 6 seconds between blinks.
+    const BLINK_DURATION_MS = 200;
+    const BLINK_INTERVAL_MIN_MS = 3000;
+    const BLINK_INTERVAL_MAX_MS = 6000;
+
+    // TALKING (MOUTH FLAP):
+    //   We'll do a cycle: "talk sprite" for random 200-400 ms, then "base sprite" for 200-400 ms, repeating.
+    //   That makes the mouth open/closed for different intervals, more natural.
+    const MOUTH_OPEN_MIN_MS    = 200;
+    const MOUTH_OPEN_MAX_MS    = 400;
+    const MOUTH_CLOSED_MIN_MS  = 200;
+    const MOUTH_CLOSED_MAX_MS  = 400;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // HELPER: RANDOM FUNCTIONS
+    ////////////////////////////////////////////////////////////////////////////
+    function randInt(min, max) {
+      return Math.floor(min + Math.random() * (max - min + 1));
+    }
+
+    function randomBlinkDelay() {
+      return randInt(BLINK_INTERVAL_MIN_MS, BLINK_INTERVAL_MAX_MS);
+    }
+    function randomMouthOpenTime() {
+      return randInt(MOUTH_OPEN_MIN_MS, MOUTH_OPEN_MAX_MS);
+    }
+    function randomMouthClosedTime() {
+      return randInt(MOUTH_CLOSED_MIN_MS, MOUTH_CLOSED_MAX_MS);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // RUNTIME STATE
+    ////////////////////////////////////////////////////////////////////////////
+    let emotion  = "happy"; // from the server
+    let talking  = false;   // from the server
+    let currentSprite = spritePaths["happy"];
+
+    // We'll do a "cycle" approach for mouth-flaps instead of setInterval
+    let mouthFlapActive = false;
+
+    // Timers for blink or other animations
+    let blinkTimeout = null;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // DOM
+    ////////////////////////////////////////////////////////////////////////////
+    const avatarImg = document.getElementById("avatarSprite");
+    function updateSpriteImage() {
+      avatarImg.src = currentSprite;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // BLINK LOGIC
+    ////////////////////////////////////////////////////////////////////////////
+    function scheduleBlink() {
+      // Only blink if emotion=="happy" && !talking
+      if (emotion !== "happy" || talking) return;
+
+      // Clear old blink
+      if (blinkTimeout) {
+        clearTimeout(blinkTimeout);
+        blinkTimeout = null;
+      }
+
+      const delay = randomBlinkDelay();
+      blinkTimeout = setTimeout(() => {
+        if (emotion === "happy" && !talking) {
+          // Show blink for BLINK_DURATION_MS
+          currentSprite = spritePaths["blink"];
+          updateSpriteImage();
+          setTimeout(() => {
+            if (emotion === "happy" && !talking) {
+              currentSprite = spritePaths["happy"];
+              updateSpriteImage();
+            }
+            // schedule next blink
+            scheduleBlink();
+          }, BLINK_DURATION_MS);
+        } else {
+          // state changed, re-schedule
+          scheduleBlink();
+        }
+      }, delay);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // MOUTH FLAP LOGIC
+    ////////////////////////////////////////////////////////////////////////////
+    function startMouthFlap() {
+      mouthFlapActive = true;
+      flapCycle();
+    }
+    function stopMouthFlap() {
+      mouthFlapActive = false;
+    }
+
+    function flapCycle() {
+      if (!mouthFlapActive) return;
+
+      // show talk sprite for random open time
+      const talkSprite = spritePaths[emotion + "_talk"] || spritePaths["happy_talk"];
+      const baseSprite = spritePaths[emotion] || spritePaths["happy"];
+
+      currentSprite = talkSprite;
+      updateSpriteImage();
+
+      const openTime = randomMouthOpenTime();
+      setTimeout(() => {
+        if (!mouthFlapActive) return;
+
+        // now show base sprite for random closed time
+        currentSprite = baseSprite;
+        updateSpriteImage();
+
+        const closedTime = randomMouthClosedTime();
+        setTimeout(() => {
+          // repeat
+          flapCycle();
+        }, closedTime);
+      }, openTime);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // HANDLE STATE CHANGES
+    ////////////////////////////////////////////////////////////////////////////
+    function handleStateChange(newEmotion, newTalking) {
+      const oldEmotion = emotion;
+      const oldTalking = talking;
+
+      emotion = newEmotion;
+      talking = newTalking;
+
+      // If we just started talking
+      if (!oldTalking && talking) {
+        // cancel blinking
+        if (blinkTimeout) {
+          clearTimeout(blinkTimeout);
+          blinkTimeout = null;
+        }
+        // start mouth flap
+        stopMouthFlap();
+        startMouthFlap();
+      }
+      // If we just stopped talking
+      else if (oldTalking && !talking) {
+        stopMouthFlap();
+
+        // show base sprite
+        currentSprite = spritePaths[emotion] || spritePaths["happy"];
+        updateSpriteImage();
+
+        // if emotion=="happy", blink
+        if (emotion === "happy") {
+          scheduleBlink();
+        }
+      }
+      // If we changed emotion while still talking
+      else if (talking && oldEmotion !== emotion) {
+        // restart mouth flap with new emotion
+        stopMouthFlap();
+        startMouthFlap();
+      }
+      // If we changed emotion while idle
+      else if (!talking && oldEmotion !== emotion) {
+        stopMouthFlap();
+        currentSprite = spritePaths[emotion] || spritePaths["happy"];
+        updateSpriteImage();
+
+        if (emotion === "happy") {
+          scheduleBlink();
+        } else {
+          // no blink if sad/angry
+          if (blinkTimeout) {
+            clearTimeout(blinkTimeout);
+            blinkTimeout = null;
+          }
+        }
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // POLL SERVER
+    ////////////////////////////////////////////////////////////////////////////
+    async function pollServerState() {
+      try {
+        const resp = await fetch("/api/state");
+        const data = await resp.json();
+        const newEmotion = data.emotion;
+        const newTalking = data.talking;
+
+        if (newEmotion !== emotion || newTalking !== talking) {
+          handleStateChange(newEmotion, newTalking);
+        }
+      } catch(e) {
+        console.error("Error fetching /api/state:", e);
+      }
+    }
+
+    // On page load, start in "happy"
+    currentSprite = spritePaths["happy"];
+    updateSpriteImage();
+    scheduleBlink();
+
+    // Repeatedly poll every 500ms
+    setInterval(pollServerState, SERVER_POLL_INTERVAL_MS);
+  </script>
+</body>
+</html>

@@ -22,9 +22,9 @@ client = OpenAI(api_key=auth_token)
 # Queue for text waiting to be turned into audio
 voice_buffer = Queue()
 
-def add_to_voice_queue(text: str):
-    """Enqueue text to be turned into speech by OpenAI TTS."""
-    voice_buffer.put(text)
+def add_to_voice_queue(text: str, emotion=None):
+    # Instead of just text, store (text, emotion)
+    voice_buffer.put((text, emotion))
 
 async def cleanup_mp3_files(directory: Path, max_files: int = 20):
     """
@@ -58,7 +58,7 @@ async def cleanup_mp3_files(directory: Path, max_files: int = 20):
 async def process_voice_queue(audio_queue):
     while True:
         if not voice_buffer.empty():
-            text = voice_buffer.get()
+            text, emotion = voice_buffer.get()
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_file = f"voice_output_{timestamp}.mp3"
@@ -74,7 +74,7 @@ async def process_voice_queue(audio_queue):
                 response.stream_to_file(str(output_path))
                 
                 # Add to audio queue for playback
-                audio_queue.put(str(output_path))
+                audio_queue.put((str(output_path), emotion))
 
                 # Schedule the cleanup asynchronously
                 asyncio.create_task(cleanup_mp3_files(output_dir, max_files=20))

@@ -59,5 +59,5 @@ def send_to_openai(title, game, username, message):
         max_tokens=config['gpt']['max_tokens']
     )
     formatted_response = format_openai_response(response)
-    logger.info(f"GPT: {formatted_response}")
+    logger.info(f"GPT RESPONSE: {formatted_response}")
     return formatted_response
