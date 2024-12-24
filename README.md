@@ -77,7 +77,7 @@ In order to connect to the necessary services, you need to specify some informat
 
 3. **`gpt-prompt.txt`**  
    - Contains the **system-level prompt** for the GPT API (the “personality” or style).
-   - Use this file to personalize the AI with how you want it to responde.
+   - Use this file to personalize the AI with how you want it to respond.
 
 4. **`blacklist.txt`**  
    - Twitch usernames listed here (one per line) will be **ignored** by the AI.  
