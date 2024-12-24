@@ -1,4 +1,4 @@
-# AI Twitch Chatbot – Quick Setup
+# msvosch AI Twitch Chatbot – Quick Setup
 
 This application is bundled as an **.exe**, so you **do not** need to install Python or additional dependencies. Simply click on "Releases" on the right sidebar and download the latest ZIP file. Then follow the steps below to configure and run the chatbot.
 
@@ -37,34 +37,50 @@ In order to connect to the necessary services, you need to specify some informat
    - If `oauth_token` is blank, the program will automatically retrieve and save a new token.
 
 2. **`config.json`**  
-   - Defines **channel name**, GPT model, voice settings, etc.  
+   - Defines **channel name**, GPT model, voice settings, etc.
+   - This will normally be configured by default, but you may change any settings you wish in here.
    - Example:
      ```json
-     {
-       "twitch": {
-         "channel_name": "YourTwitchName"
-       },
-       "gpt": {
-         "ai_name": "YourBotName",
-         "model": "gpt-4o-mini-2024-07-18",
-         "max_tokens": 50
-       },
-       "voice": {
-         "mode": "openai"
-       },
-       "paths": {
-         "output_dir": "output",
-         "blacklist": "blacklist.txt",
-         "prompt": "gpt-prompt.txt"
-       }
-     }
+      {
+          "twitch": {
+              "channel_name": ""
+          },
+          "voice": {
+              "mode": "elevenlabs",
+              "elevenlabs": {
+                  "voice_id": "",
+                  "model_id": "eleven_multilingual_v2",
+                  "output_format": "mp3_44100_128",
+                  "stability":"0.6",
+                  "similarity_boost":"0.99",
+                  "style":"0.3",
+                  "use_speaker_boost":"True"
+              },
+              "openai": {
+                  "model": "tts-1",
+                  "voice": "shimmer"
+              }
+          },
+          "gpt": {
+              "ai_name": "Victoria", 
+              "model": "gpt-4o-mini-2024-07-18",
+              "max_tokens": 80
+          },
+          "paths": {
+              "output_dir": "output",
+              "blacklist": "blacklist.txt",
+              "logs": "gpt.log",
+              "prompt": "gpt-prompt.txt"
+          }
+      }
      ```
 
 3. **`gpt-prompt.txt`**  
    - Contains the **system-level prompt** for the GPT API (the “personality” or style).
+   - Use this file to personalize the AI with how you want it to responde.
 
 4. **`blacklist.txt`**  
-   - Names listed here (one per line) will be **ignored** by the AI.  
+   - Twitch usernames listed here (one per line) will be **ignored** by the AI.  
    - This file can be edited at **runtime** without restarting the bot.
 
 ---
@@ -89,13 +105,15 @@ templates/
 ## 3. Usage
 
 1. **Place** all files in the same folder as `AI_Chatbot.exe`.  
-2. **Edit** `SECRETS.json` with your **Twitch** and **OpenAI** credentials.  
+2. **Edit** `SECRETS.json` with your credentials.  
 3. **Update** `config.json` with your Twitch channel name, AI name, etc.  
 4. **Customize** `gpt-prompt.txt` if you want a different “system” prompt or style.  
 5. **Run** `AI_Chatbot.exe`.  
 6. In your streaming software (OBS, etc.):  
-   - Add a **Browser Source** pointing to `http://127.0.0.1:5000` for the avatar animation.  
-   - Configure your audio to capture the **TTS** output.
+   - Add a **Browser Source** pointing to `http://localhost:5000` for the avatar animation.
+   - Set the resolution to 512px x 512px
+   - Remove anything in the Custom CSS field.
+   - Check "Refresh browser when scene becomes active"
 
 ---
 
