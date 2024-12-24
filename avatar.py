@@ -2,13 +2,29 @@ import threading
 import asyncio
 import random
 import os
+import sys
 import logging
 from flask import Flask, jsonify, render_template
 
+def get_base_dir():
+    """
+    Returns the directory where the .exe (or .py) is located.
+    If we're running a PyInstaller-frozen build, use sys.executable.
+    Otherwise, use the directory of this file.
+    """
+    if getattr(sys, 'frozen', False):
+        # If running from an EXE created by PyInstaller
+        return os.path.dirname(sys.executable)
+    else:
+        # Running from normal Python
+        return os.path.dirname(os.path.abspath(__file__))
+
+base_dir = get_base_dir()
+
 app = Flask(
     __name__,
-    static_folder="static",     # where PNGs (happy.png, sad.png, etc.) can go
-    template_folder="templates" # where HTML templates go
+    static_folder=os.path.join(base_dir, "static"),    # external 'static' folder
+    template_folder=os.path.join(base_dir, "templates")  # external 'templates' folder
 )
 
 ###############################################################################
@@ -74,7 +90,6 @@ def set_avatar_state(emotion=None, talking=None):
     # If we just switched from talking=False -> talking=True,
     # or changed emotion while talking => cancel any pending revert
     if is_talking:
-        # Cancel revert timer if it exists
         global revert_timer_task
         if revert_timer_task and not revert_timer_task.done():
             revert_timer_task.cancel()
