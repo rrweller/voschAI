@@ -16,6 +16,10 @@ with open('config.json') as f:
 
 voice_config = config['voice']['elevenlabs']
 output_dir = Path(config['paths']['output_dir'])
+stability = config['voice']['elevenlabs']['stability']
+similarity = config['voice']['elevenlabs']['similarity_boost']
+style = config['voice']['elevenlabs']['style']
+speakerboost = config['voice']['elevenlabs']['use_speaker_boost']
 
 client = ElevenLabs(api_key=voice_token)
 
@@ -43,7 +47,6 @@ async def cleanup_mp3_files(directory: Path, max_files: int = 20):
         for i in range(num_to_remove):
             try:
                 mp3_files[i].unlink()
-                print(f"Deleted old mp3 file: {mp3_files[i].name}")
             except Exception as e:
                 print(f"Error deleting file {mp3_files[i].name}: {e}")
 
@@ -56,11 +59,19 @@ async def process_voice_queue(audio_queue):
             output_path = output_dir / output_file
             
             try:
+                voice_settings = {
+                    "stability": stability,
+                    "similarity_boost": similarity,
+                    "style": style,
+                    "use_speaker_boost": speakerboost
+                }
+                
                 audio_content = client.text_to_speech.convert(
                     voice_id=voice_config['voice_id'],
                     output_format=voice_config['output_format'],
                     text=text,
                     model_id=voice_config['model_id'],
+                    voice_settings=voice_settings
                 )
                 
                 with open(output_path, "wb") as audio_file:

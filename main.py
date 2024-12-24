@@ -50,7 +50,6 @@ async def process_audio_queue():
                 set_avatar_state(talking=True)
 
             play_audio_file(audio_file)
-            print(f"Playing: {audio_file}")
 
         await asyncio.sleep(0.1)
 

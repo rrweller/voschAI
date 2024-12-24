@@ -3,11 +3,15 @@
         "channel_name": "keudn"
     },
     "voice": {
-        "mode": "openai",
+        "mode": "elevenlabs",
         "elevenlabs": {
-            "voice_id": "cgSgspJ2msm6clMCkdW9",
+            "voice_id": "bMisIR8nnr8o9HiC8uYN",
             "model_id": "eleven_multilingual_v2",
-            "output_format": "mp3_44100_128"
+            "output_format": "mp3_44100_128",
+            "stability":"0.6",
+            "similarity_boost":"0.99",
+            "style":"0.3",
+            "use_speaker_boost":"True"
         },
         "openai": {
             "model": "tts-1",
