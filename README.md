@@ -1,23 +1,38 @@
 # AI Twitch Chatbot – Quick Setup
 
-This application is bundled as an **.exe**, so you **do not** need to install Python or additional dependencies. Simply follow the steps below to configure and run the chatbot.
+This application is bundled as an **.exe**, so you **do not** need to install Python or additional dependencies. Simply click on "Releases" on the right sidebar and download the latest ZIP file. Then follow the steps below to configure and run the chatbot.
 
 ---
 
 ## 1. Configuration Files
+In order to connect to the necessary services, you need to specify some information inside the `SECRETS.json` and `config.json` files.
+
+**NOTE: DO NOT EVER SHARE OR DISPLAY THE INFORMATION INSIDE SECRETS.JSON**
 
 1. **`SECRETS.json`**  
-   - Stores **Twitch** credentials (`client_id`, `client_secret`, `oauth_token`) and **OpenAI** token.  
+   - You will need to retrieve your openAI and/or Elevenlabs API tokens, depending on which TTS service you want to use. You will also need your Twitch Client ID and Secret in order to retrieve the stream title and current category. The OAuth token will be automatically generated for you.
+   - Please use the following links for information on how to get these tokens
+      - https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key
+      - https://elevenlabs.io/app/home
+         - After signing up, click your name in the bottom left and choose "API Keys"   
+      - https://dev.twitch.tv/console/apps
+         - Register a new application
+         - Use http://localhost for the OAuth Redirect URLs
    - Example structure:
      ```json
      {
-       "openAI": { "authToken": "YOUR_OPENAI_KEY" },
-       "twitch": {
-         "client_id": "YOUR_TWITCH_CLIENT_ID",
-         "client_secret": "YOUR_TWITCH_CLIENT_SECRET",
-         "oauth_token": ""
-       }
-     }
+        "openAI": {
+          "authToken": "TOKEN_HERE"
+        },
+        "elevenlabs": {
+          "authToken": "TOKEN_HERE"
+        },
+        "twitch": {
+          "client_id": "TOKEN_HERE",
+          "client_secret": "TOKEN_HERE",
+          "oauth_token": "WILL AUTO GENERATE ON FIRST USE"
+        }
+      }
      ```
    - If `oauth_token` is blank, the program will automatically retrieve and save a new token.
 
