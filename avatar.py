@@ -19,7 +19,7 @@ is_talking = False
 
 # We'll keep a reference to a "revert to happy" timer (async Task) if scheduled
 revert_timer_task = None
-REVERT_DELAY_SECONDS = 5  # How many seconds after idle to force revert to "happy"
+REVERT_DELAY_SECONDS = 3  # How many seconds after idle to force revert to "happy"
 
 ###############################################################################
 # Revert Timer Logic (Server-Side)

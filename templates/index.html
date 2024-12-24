@@ -40,7 +40,7 @@
     // TIMING CONSTANTS
     ////////////////////////////////////////////////////////////////////////////
     // How often to poll the server for updated emotion/talking state (ms)
-    const SERVER_POLL_INTERVAL_MS = 600;
+    const SERVER_POLL_INTERVAL_MS = 200;
 
     // BLINK CONFIG:
     //   We blink only if emotion=="happy" and talking==false.
@@ -53,9 +53,9 @@
     // TALKING (MOUTH FLAP):
     //   We'll do a cycle: "talk sprite" for random 200-400 ms, then "base sprite" for 200-400 ms, repeating.
     //   That makes the mouth open/closed for different intervals, more natural.
-    const MOUTH_OPEN_MIN_MS    = 100;
+    const MOUTH_OPEN_MIN_MS    = 150;
     const MOUTH_OPEN_MAX_MS    = 300;
-    const MOUTH_CLOSED_MIN_MS  = 100;
+    const MOUTH_CLOSED_MIN_MS  = 150;
     const MOUTH_CLOSED_MAX_MS  = 300;
 
     ////////////////////////////////////////////////////////////////////////////

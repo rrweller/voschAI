@@ -40,29 +40,23 @@ def play_audio_file(audio_file):
     return False
 
 async def process_audio_queue():
-    """
-    Continuously pulls (audio_file, emotion) from audio_queue.
-    Plays the file, updates talking state accordingly.
-    """
     while True:
-        # If nothing playing and queue not empty, play next file
+        # If mixer isn't busy AND we have a file, play it
         if not mixer.music.get_busy() and not audio_queue.empty():
             audio_file, emotion = audio_queue.get()
-
-            # Apply the avatar emotion just before playback
             if emotion:
                 set_avatar_state(emotion=emotion, talking=True)
             else:
                 set_avatar_state(talking=True)
 
-            played = play_audio_file(audio_file)
-        
-        await asyncio.sleep(0.5)
-        
-        # If playback ended, set talking=False
-        if not mixer.music.get_busy():
-            if audio_queue.empty():
-                set_avatar_state(talking=False)
+            play_audio_file(audio_file)
+            print(f"Playing: {audio_file}")
+
+        await asyncio.sleep(0.1)
+
+        # If playback ended AND queue empty, set talking=False
+        if not mixer.music.get_busy() and audio_queue.empty():
+            set_avatar_state(talking=False)
 
 async def main():
     # This queue receives all Twitch chat messages plus ("__channel_info__", ...) events

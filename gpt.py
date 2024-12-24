@@ -44,6 +44,7 @@ except json.JSONDecodeError:
 client = OpenAI(api_key=auth_token)
 
 streamer = config['twitch']['channel_name']
+AI_name = config['gpt']['ai_name']
 
 def send_to_openai(title, game, username, message):
     logger.info(message)
@@ -54,7 +55,7 @@ def send_to_openai(title, game, username, message):
         model=config['gpt']['model'],
         messages=[
             {"role": "system", "content": f"ALWAYS START THE MESSAGE WITH THE EMOTION YOU WANT TO CONVEY IN THE FORMAT [EMOTION]. THE ONLY VALID OPTIONS FOR EMOTIONS ARE HAPPY, SAD, ANGRY. DO NOT USE ANY OTHER EMOTIONS AS A MESSAGE PREFIX. ALWAYS KEEP THE FORMATTING I HAVE DEFINED. Only use SAD or ANGRY if you REALLY are feeling those emotions and they are intense. Use the stream title and current game as context for your response, but do not always mention it, only using it when it makes sense. Respond with short, concise responses that are natural conversation. Respond in ONLY one or two SHORT sentences. {system_content}"},
-            {"role": "user", "content": f"{streamer} is streaming {game} with the title {title}. You are an AI assistant for {streamer}. Address the message to the user {username} with the message: {message}."},
+            {"role": "user", "content": f"{streamer} is streaming {game} with the title {title}. You are an AI assistant named {AI_name} who helps {streamer}. Respond to the following message sent by {username}: {message}."},
         ],
         max_tokens=config['gpt']['max_tokens']
     )
