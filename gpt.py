@@ -7,28 +7,9 @@ from response_formatter import format_openai_response
 with open('config.json') as f:
     config = json.load(f)
 
-# Create custom filter
-class ChatFilter(logging.Filter):
-    def filter(self, record):
-        return "HTTP Request" not in record.getMessage()
-
-# Configure logging with UTF-8 encoding
-logger = logging.getLogger()
+logger = logging.getLogger("my_app.gpt")
 logger.setLevel(logging.INFO)
-
-# Create file handler with simplified format
-file_handler = logging.FileHandler('gpt.log', encoding='utf-8')
-file_handler.setFormatter(
-    logging.Formatter('%(asctime)s: %(message)s', 
-                     datefmt='%Y-%m-%d %H:%M:%S')
-)
-file_handler.addFilter(ChatFilter())
-logger.addHandler(file_handler)
-
-# Disable ALL OpenAI logging
-logging.getLogger("openai").setLevel(logging.ERROR)
-logging.getLogger("openai.api_requestor").setLevel(logging.ERROR)
-logging.getLogger("openai.http_client").setLevel(logging.ERROR)
+logger.propagate = False
 
 try:
     with open('SECRETS.json') as f:
@@ -60,5 +41,4 @@ def send_to_openai(title, game, username, message):
         max_tokens=config['gpt']['max_tokens']
     )
     formatted_response = format_openai_response(response)
-    logger.info(f"GPT RESPONSE: {formatted_response}")
     return formatted_response

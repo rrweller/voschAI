@@ -6,6 +6,7 @@ from pygame import mixer
 from queue import Queue
 import json
 import sys
+import logging
 
 # Import from avatar
 from avatar import run_avatar_server, set_avatar_state
@@ -13,6 +14,29 @@ from avatar import run_avatar_server, set_avatar_state
 # Load config
 with open('config.json') as f:
     config = json.load(f)
+
+# Create custom filter
+class ChatFilter(logging.Filter):
+    def filter(self, record):
+        return "HTTP Request" not in record.getMessage()
+
+# Configure logging with UTF-8 encoding
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+# Create file handler with simplified format
+file_handler = logging.FileHandler('gpt.log', encoding='utf-8')
+file_handler.setFormatter(
+    logging.Formatter('%(asctime)s: %(message)s', 
+                     datefmt='%Y-%m-%d %H:%M:%S')
+)
+file_handler.addFilter(ChatFilter())
+logger.addHandler(file_handler)
+
+# Disable ALL OpenAI logging
+logging.getLogger("openai").setLevel(logging.ERROR)
+logging.getLogger("openai.api_requestor").setLevel(logging.ERROR)
+logging.getLogger("openai.http_client").setLevel(logging.ERROR)
 
 Path(config['paths']['output_dir']).mkdir(exist_ok=True)
 mixer.init()
@@ -87,6 +111,7 @@ async def main():
                 current_title = title
                 current_game = game_name
                 print(f"[CHANNEL INFO] Title='{title}', Game='{game_name}'")
+                logger.info(f"[CHANNEL INFO] Title='{title}', Game='{game_name}'")
             
             else:
                 # A normal chat message
@@ -108,6 +133,7 @@ async def main():
                 text = mention["msg"]
 
                 print(f"[MENTION] {user}: {text}")
+                logger.info(f"[MENTION] {user}: {text}")
 
                 # 5) Send to GPT
                 gpt_response = send_to_openai(
@@ -127,7 +153,8 @@ async def main():
                             emotion = potential_emotion
                             gpt_response = gpt_response[end_idx + 1:].strip()
 
-                print(f"GPT => (emotion={emotion}): {gpt_response}")
+                print(f"[GPT RESPONSE][{emotion}]: {gpt_response}")
+                logger.info(f"[GPT RESPONSE][{emotion}]: {gpt_response}")
 
                 # 7) Send result to TTS queue
                 add_to_voice_queue(gpt_response, emotion=emotion)
