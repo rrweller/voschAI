@@ -7,14 +7,13 @@ import os
 
 SECRETS_FILE = 'secrets.json'
 
-
 def ensure_oauth_token():
     """
     Ensures the 'twitch' object in secrets.json has a valid oauth_token.
     If missing or empty, retrieve a new one from Twitch and save it.
     
     Returns:
-        The oauth_token string
+        (client_id, client_secret, oauth_token)
     """
     # 1) Read secrets
     if not os.path.isfile(SECRETS_FILE):
@@ -48,7 +47,6 @@ def ensure_oauth_token():
 
     return client_id, client_secret, oauth_token
 
-
 def get_oauth_token(client_id, client_secret):
     """
     Retrieves an OAuth token from Twitch using client_credentials flow.
@@ -71,11 +69,11 @@ def get_oauth_token(client_id, client_secret):
         print("Error getting OAuth token:", data)
         return None
 
-
 async def update_channel_info(channel_name, chat_queue, client_id, oauth_token):
     """
     Periodically fetch the channel's title and current game using the Twitch Helix API.
     Every 5 minutes, put a special tuple into chat_queue with the updated info.
+    If a 401 (Unauthorized) occurs, print a message about deleting old token.
     """
     headers = {
         'Client-ID': client_id,
@@ -88,6 +86,14 @@ async def update_channel_info(channel_name, chat_queue, client_id, oauth_token):
                 # Step 1: Search channels by name to find the broadcaster ID
                 search_url = f"https://api.twitch.tv/helix/search/channels?query={channel_name}"
                 async with session.get(search_url, headers=headers) as resp:
+                    # If token is invalid/expired, Twitch returns 401
+                    if resp.status == 401:
+                        print("\n[WARNING] Twitch OAuth token may be expired or invalid.")
+                        print("Please delete the old token in secrets.json so a new one can be generated.\n")
+                        # Sleep 5 minutes before next attempt
+                        await asyncio.sleep(300)
+                        continue
+
                     search_data = await resp.json()
 
                     broadcaster_id = None
@@ -107,6 +113,12 @@ async def update_channel_info(channel_name, chat_queue, client_id, oauth_token):
                 # Step 2: Now get channel info (title, game_id) using broadcaster_id
                 info_url = f"https://api.twitch.tv/helix/channels?broadcaster_id={broadcaster_id}"
                 async with session.get(info_url, headers=headers) as resp:
+                    if resp.status == 401:
+                        print("\n[WARNING] Twitch OAuth token may be expired or invalid.")
+                        print("Please delete the old token in secrets.json so a new one can be generated.\n")
+                        await asyncio.sleep(300)
+                        continue
+
                     channel_data = await resp.json()
                     
                     if 'data' in channel_data and channel_data['data']:
@@ -121,7 +133,6 @@ async def update_channel_info(channel_name, chat_queue, client_id, oauth_token):
         # Wait 5 minutes before next update
         await asyncio.sleep(300)
 
-
 async def read_blacklist(config):
     try:
         with open(config['paths']['blacklist'], 'r') as f:
@@ -129,7 +140,6 @@ async def read_blacklist(config):
     except Exception as e:
         print(f"Error reading blacklist: {e}")
         return set()
-
 
 async def read_chat_forever(channel, chat_queue, config):
     """
