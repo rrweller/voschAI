@@ -94,7 +94,7 @@ async def process_audio_queue():
 def process_voice_input(text):
     global current_title, current_game
     # Create special voice message that gets priority
-    response = send_to_openai(current_title, current_game, "Streamer", text)
+    response = send_to_openai(current_title, current_game, channel_name, text)
     if response:
         add_to_voice_queue(response)
 
