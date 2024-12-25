@@ -11,6 +11,7 @@ import sys
 import logging
 from ui import start_voice_ui
 import threading
+from response_formatter import extract_emotion
 
 # Import from avatar
 from avatar import run_avatar_server, set_avatar_state
@@ -95,8 +96,7 @@ def process_voice_input(text):
     global current_title, current_game
     # Create special voice message that gets priority
     response = send_to_openai(current_title, current_game, channel_name, text)
-    if response:
-        add_to_voice_queue(response)
+    return response  # Return response instead of directly adding to queue
 
 async def main():
     # This queue receives all Twitch chat messages plus ("__channel_info__", ...) events
@@ -168,14 +168,7 @@ async def main():
                 )
 
                 # 6) Check for emotion prefix ([happy], [sad], [angry])
-                emotion = None
-                if gpt_response.startswith("["):
-                    end_idx = gpt_response.find("]")
-                    if end_idx != -1:
-                        potential_emotion = gpt_response[1:end_idx].strip().lower()
-                        if potential_emotion in ["happy", "sad", "angry"]:
-                            emotion = potential_emotion
-                            gpt_response = gpt_response[end_idx + 1:].strip()
+                emotion, gpt_response = extract_emotion(gpt_response)
 
                 print(f"[GPT RESPONSE][{emotion}]: {gpt_response}")
                 logger.info(f"[GPT RESPONSE][{emotion}]: {gpt_response}")

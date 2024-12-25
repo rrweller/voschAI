@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 from openai import OpenAI
 from pathlib import Path
+from response_formatter import extract_emotion
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ client = OpenAI(api_key=auth_token)
 RECORD_KEY = config['ui'].get('record_key', 'k')  # Default to 'k'
 SAMPLE_RATE = 44100
 MIN_AUDIO_LENGTH = 0.5  # Minimum audio length in seconds
+voice_mode = config['voice']['mode']
 
 class VoiceRecorder:
     def __init__(self, gpt_callback):
@@ -95,11 +97,23 @@ class VoiceRecorder:
                             response_format="text"
                         )
                     
-                    if transcription and isinstance(transcription, str):
+                    if transcription:
                         print(f"\nTranscribed: {transcription}")
-                        self.gpt_callback(transcription)
-                    else:
-                        logger.error(f"Invalid transcription response: {transcription}")
+                        # Get GPT response through callback
+                        gpt_response = self.gpt_callback(transcription)
+                        
+                        if gpt_response:
+                            # Extract emotion from GPT response
+                            emotion, cleaned_text = extract_emotion(gpt_response)
+                            print(f"[GPT RESPONSE][{emotion}]: {cleaned_text}")
+                            
+                            if voice_mode == 'openai':
+                                from voice_openai import add_to_voice_queue
+                            else:
+                                from voice import add_to_voice_queue
+                                
+                            # Add to voice queue with extracted emotion
+                            add_to_voice_queue(cleaned_text, emotion=emotion)
                     
                 except Exception as e:
                     logger.error(f"Transcription error: {str(e)}")
