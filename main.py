@@ -2,11 +2,15 @@ import asyncio
 from twitch_chat import read_chat_forever
 from gpt import send_to_openai
 from pathlib import Path
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 from pygame import mixer
 from queue import Queue
 import json
 import sys
 import logging
+from ui import start_voice_ui
+import threading
 
 # Import from avatar
 from avatar import run_avatar_server, set_avatar_state
@@ -38,11 +42,17 @@ logging.getLogger("openai").setLevel(logging.ERROR)
 logging.getLogger("openai.api_requestor").setLevel(logging.ERROR)
 logging.getLogger("openai.http_client").setLevel(logging.ERROR)
 
+# Disable httpx logging
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 Path(config['paths']['output_dir']).mkdir(exist_ok=True)
 mixer.init()
 
 audio_queue = Queue()
 channel_name = config['twitch']['channel_name']
+
+current_game = None
+current_title = None
 
 # This is our new AI name from config
 AI_NAME = config['gpt'].get('ai_name', 'assistant')
@@ -81,13 +91,19 @@ async def process_audio_queue():
         if not mixer.music.get_busy() and audio_queue.empty():
             set_avatar_state(talking=False)
 
+def process_voice_input(text):
+    global current_title, current_game
+    # Create special voice message that gets priority
+    response = send_to_openai(current_title, current_game, "Streamer", text)
+    if response:
+        add_to_voice_queue(response)
+
 async def main():
     # This queue receives all Twitch chat messages plus ("__channel_info__", ...) events
     chat_message_queue = asyncio.Queue()
     
     # We'll store the last known channel title/game
-    current_title = None
-    current_game = None
+    global current_title, current_game
 
     # Start the avatar server
     asyncio.create_task(run_avatar_server())
@@ -99,6 +115,14 @@ async def main():
     
     # This is our queue for messages that specifically mention the AI
     mention_queue = []
+
+    # Start the voice UI thread
+    voice_ui_thread = threading.Thread(
+        target=start_voice_ui,
+        args=(process_voice_input,),
+        daemon=True
+    )
+    voice_ui_thread.start()
 
     while True:
         try:

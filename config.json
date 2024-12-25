@@ -28,5 +28,8 @@
         "blacklist": "blacklist.txt",
         "logs": "gpt.log",
         "prompt": "gpt-prompt.txt"
+    },
+    "ui": {
+        "record_key": "right ctrl"
     }
 }
