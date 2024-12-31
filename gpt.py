@@ -47,15 +47,13 @@ def save_message(username, message_type, content, ai_name=None):
     os.makedirs(data_dir, exist_ok=True)
     user_file = os.path.join(data_dir, f"{username}.json")
     
-    # Check if the file exists, if not, create it with an initial structure
-    if not os.path.exists(user_file):
-        user_data = {"username": username, "messages": []}
-        with open(user_file, "w") as f:
-            json.dump(user_data, f, indent=4)
-    else:
+    # Load existing history or create a new structure
+    if os.path.exists(user_file):
         with open(user_file, "r") as f:
             user_data = json.load(f)
-    
+    else:
+        user_data = {"username": username, "messages": []}
+
     # Add new message
     new_message = {
         "timestamp": datetime.utcnow().isoformat(),
@@ -66,32 +64,50 @@ def save_message(username, message_type, content, ai_name=None):
         new_message["name"] = ai_name  # Add AI name to responses
     
     user_data["messages"].append(new_message)
-    
+
     # Enforce message limit (only count user messages)
     user_messages = [msg for msg in user_data["messages"] if msg["type"] == "user"]
     if len(user_messages) > max_messages:
-        # Find the oldest user message and its corresponding AI response
+        # Remove the oldest user message and its paired AI response
         oldest_user_index = next(i for i, msg in enumerate(user_data["messages"]) if msg["type"] == "user")
-        del user_data["messages"][oldest_user_index]  # Remove oldest user message
+        del user_data["messages"][oldest_user_index]
         
-        # Remove corresponding AI response (if exists and follows the user message)
+        # Remove corresponding AI response (if exists)
         if oldest_user_index < len(user_data["messages"]) and user_data["messages"][oldest_user_index]["type"] == "ai":
             del user_data["messages"][oldest_user_index]
-    
-    # Save updated data back to the file and return its content
+
+    # Save updated history
     with open(user_file, "w") as f:
         json.dump(user_data, f, indent=4)
-        
-    # Return properly formatted message history
-    return [
-        {"role": "user" if msg["type"] == "user" else "assistant", 
-         "content": msg["content"]}
-        for msg in user_data["messages"]
-    ]
+
+def read_user_history(username):
+    """
+    Reads the user's message history from their JSON file and formats it for the OpenAI API.
+
+    Args:
+        username (str): The user's name.
+
+    Returns:
+        list: A list of formatted messages (role: user/assistant, content: message).
+    """
+    user_file = os.path.join(data_dir, f"{username}.json")
+
+    if os.path.exists(user_file):
+        with open(user_file, "r") as f:
+            user_data = json.load(f)
+        return [
+            {"role": "user" if msg["type"] == "user" else "assistant", "content": msg["content"]}
+            for msg in user_data["messages"]
+        ]
+    else:
+        return []
 
 def send_to_openai(title, game, username, message):
-    logger.info(f"Received following message from {username}: {message}, storing into user history.")
-    user_context = save_message(username, "user", message, AI_name)
+    message = message.replace("\n", " ").strip()
+    logger.info(f"Received following message from {username}: {message}")
+    
+    # Fetch the current user history
+    user_context = read_user_history(username)
     logger.info(f"User context: {user_context}")
     
     prompt_path = config['paths']['prompt']
@@ -105,6 +121,7 @@ def send_to_openai(title, game, username, message):
     
     with open(prompt_path, 'r') as prompt_file:
         system_content = prompt_file.read()
+        system_content = system_content.replace("\n", " ").strip()
 
     system_message = {
         "role": "system",
@@ -137,5 +154,9 @@ def send_to_openai(title, game, username, message):
         max_tokens=config['gpt']['max_tokens']
     )
     formatted_response = format_openai_response(response)
-    logger.info(formatted_response)
+
+    # Save the current message and the AI response
+    save_message(username, "user", message)  # Save the user's message
+    save_message(username, "ai", formatted_response, ai_name=AI_name)  # Save the AI's response
+
     return formatted_response
