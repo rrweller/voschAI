@@ -10,6 +10,7 @@ from datetime import datetime
 from openai import OpenAI
 from pathlib import Path
 from response_formatter import extract_emotion
+import time
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -96,7 +97,10 @@ class VoiceRecorder:
                             file=audio_file,
                             response_format="text"
                         )
-                    
+                    logger.debug(f"Whisper API response: {transcription}")
+                    if not transcription.strip():
+                        logger.debug("Transcription result is empty.")
+                        raise ValueError("Transcription result is empty.")
                     if transcription:
                         print(f"\nTranscribed: {transcription}")
                         # Get GPT response through callback
@@ -109,7 +113,7 @@ class VoiceRecorder:
                             
                             if voice_mode == 'openai':
                                 from voice_openai import add_to_voice_queue
-                            else:
+                            elif voice_mode == 'elevenlabs':
                                 from voice import add_to_voice_queue
                                 
                             # Add to voice queue with extracted emotion
@@ -129,6 +133,7 @@ class VoiceRecorder:
 
 def start_voice_ui(gpt_callback):
     recorder = VoiceRecorder(gpt_callback)
+    time.sleep(3)
     print(f"\nPress and hold {RECORD_KEY} to record...")
     
     keyboard.on_press_key(RECORD_KEY, lambda _: recorder.start_recording())

@@ -30,7 +30,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Create file handler with simplified format
-file_handler = logging.FileHandler('gpt.log', encoding='utf-8')
+file_handler = logging.FileHandler('log.log', encoding='utf-8')
 file_handler.setFormatter(
     logging.Formatter('%(asctime)s: %(message)s', 
                      datefmt='%Y-%m-%d %H:%M:%S')
@@ -61,7 +61,7 @@ AI_NAME = config['gpt'].get('ai_name', 'assistant')
 voice_mode = config['voice']['mode']
 if voice_mode == 'openai':
     from voice_openai import process_voice_queue, add_to_voice_queue
-else:
+elif voice_mode == 'elevenlabs':
     from voice import process_voice_queue, add_to_voice_queue
 
 def play_audio_file(audio_file):
