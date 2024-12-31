@@ -49,7 +49,7 @@ def save_message(username, message_type, content, ai_name=None):
     
     # Load existing history or create a new structure
     if os.path.exists(user_file):
-        with open(user_file, "r") as f:
+        with open(user_file, "r", encoding="utf-8") as f:
             user_data = json.load(f)
     else:
         user_data = {"username": username, "messages": []}
@@ -77,8 +77,8 @@ def save_message(username, message_type, content, ai_name=None):
             del user_data["messages"][oldest_user_index]
 
     # Save updated history
-    with open(user_file, "w") as f:
-        json.dump(user_data, f, indent=4)
+    with open(user_file, "w", encoding="utf-8") as f:
+        json.dump(user_data, f, indent=4, ensure_ascii=False)
 
 def read_user_history(username):
     """
