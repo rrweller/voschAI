@@ -1,9 +1,9 @@
 {
     "twitch": {
-        "channel_name": "keudn"
+        "channel_name": "msvosch"
     },
     "voice": {
-        "mode": "openai",
+        "mode": "elevenlabs",
         "elevenlabs": {
             "voice_id": "bMisIR8nnr8o9HiC8uYN",
             "model_id": "eleven_multilingual_v2",
@@ -33,7 +33,7 @@
         "record_key": "right ctrl"
     },
     "user_history": {
-        "max_messages": 5,
+        "max_messages": 20,
         "data_dir": "user_data"
     }
 }

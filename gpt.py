@@ -60,8 +60,6 @@ def save_message(username, message_type, content, ai_name=None):
         "type": message_type,
         "content": content
     }
-    if message_type == "ai" and ai_name:
-        new_message["name"] = ai_name  # Add AI name to responses
     
     user_data["messages"].append(new_message)
 

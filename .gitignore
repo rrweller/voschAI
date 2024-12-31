@@ -161,3 +161,6 @@ cython_debug/
 activate.bat
 SECRETS.json
 /output
+/user_data
+/user_data
+user_data/keudn.json
